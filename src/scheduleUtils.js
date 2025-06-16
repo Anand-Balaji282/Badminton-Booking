@@ -20,6 +20,7 @@ export const TIMES = [
   "6:00 PM - 7:00 PM",
   "7:00 PM - 8:00 PM"
 ];
+
 export function getCurrentSchedule() {
   const s = localStorage.getItem("schedule");
   return s ? JSON.parse(s) : {};
@@ -29,9 +30,9 @@ export function saveSchedule(schedule) {
   localStorage.setItem("schedule", JSON.stringify(schedule));
 }
 
-const EMAIL_DOMAIN = "example.com";
-const MAX_PER_SLOT = 8;
-const MAX_WEEKLY_HOURS = 2;
+export const EMAIL_DOMAIN = "example.com";
+export const MAX_PER_SLOT = 8;
+export const MAX_WEEKLY_HOURS = 2;
 
 // Helper: Get all slots
 export function getAllSlots(schedule) {
@@ -123,4 +124,21 @@ export function removeUser({ name, day, timeLabel }) {
       message: "You were not registered in this slot.",
     };
   }
+}
+
+// Promote waitlisted users to confirmed if there is space
+export function promoteWaitlistedUsers(schedule) {
+  let updated = false;
+  for (const { slot } of getAllSlots(schedule)) {
+    while (
+      slot.confirmed.length < MAX_PER_SLOT &&
+      slot.waitlist.length > 0
+    ) {
+      // Promote the first user on the waitlist
+      const user = slot.waitlist.shift();
+      slot.confirmed.push(user);
+      updated = true;
+    }
+  }
+  if (updated) saveSchedule(schedule);
 }
