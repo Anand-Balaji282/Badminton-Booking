@@ -100,12 +100,18 @@ export function registerUser({ name, day, timeLabel }) {
   const schedule = getCurrentSchedule();
   const email = `${name}@${EMAIL_DOMAIN}`;
   const slot = schedule[day][timeLabel];
-  // Remove user from all slots (if reregistering)
-  for (const { slot: s } of getAllSlots(schedule)) {
-    s.confirmed = s.confirmed.filter(u => u.name !== name);
-    s.waitlist = s.waitlist.filter(u => u.name !== name);
+
+  // Check if user is already registered in this slot
+  const alreadyConfirmed = slot.confirmed.some(u => u.name === name);
+  const alreadyWaitlist = slot.waitlist.some(u => u.name === name);
+  if (alreadyConfirmed || alreadyWaitlist) {
+    return {
+      status: alreadyConfirmed ? "confirmed" : "waitlist",
+      reason: "You are already registered for this slot.",
+    };
   }
-  // Check weekly hours
+
+  // Check weekly hours (confirmed registrations only)
   const hours = getUserWeeklyHours(schedule, name);
   let status, reason;
   if (hours >= MAX_WEEKLY_HOURS) {
