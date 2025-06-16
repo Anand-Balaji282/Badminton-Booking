@@ -21,6 +21,10 @@ export const TIMES = [
   "7:00 PM - 8:00 PM"
 ];
 
+export const EMAIL_DOMAIN = "example.com";
+export const MAX_PER_SLOT = 8;
+export const MAX_WEEKLY_HOURS = 2;
+
 export function getCurrentSchedule() {
   const s = localStorage.getItem("schedule");
   return s ? JSON.parse(s) : {};
@@ -30,9 +34,18 @@ export function saveSchedule(schedule) {
   localStorage.setItem("schedule", JSON.stringify(schedule));
 }
 
-export const EMAIL_DOMAIN = "example.com";
-export const MAX_PER_SLOT = 8;
-export const MAX_WEEKLY_HOURS = 2;
+// Initialize the schedule for all days and times
+export function initializeSchedule() {
+  const schedule = {};
+  for (const day of DAYS) {
+    schedule[day] = {};
+    for (const timeLabel of TIMES) {
+      schedule[day][timeLabel] = { confirmed: [], waitlist: [] };
+    }
+  }
+  saveSchedule(schedule);
+  return schedule;
+}
 
 // Helper: Get all slots
 export function getAllSlots(schedule) {
