@@ -1,16 +1,15 @@
-const EMAIL_DOMAIN = "example.com";
-const MAX_PER_SLOT = 8;
-const MAX_WEEKLY_HOURS = 2;
-
-// Load and save schedule (replace with real storage in production)
-function getCurrentSchedule() {
+export function getCurrentSchedule() {
   const s = localStorage.getItem("schedule");
   return s ? JSON.parse(s) : {};
 }
 
-function saveSchedule(schedule) {
+export function saveSchedule(schedule) {
   localStorage.setItem("schedule", JSON.stringify(schedule));
 }
+
+const EMAIL_DOMAIN = "example.com";
+const MAX_PER_SLOT = 8;
+const MAX_WEEKLY_HOURS = 2;
 
 // Helper: Get all slots
 export function getAllSlots(schedule) {
