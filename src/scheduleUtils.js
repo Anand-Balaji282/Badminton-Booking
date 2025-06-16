@@ -132,17 +132,25 @@ export function registerUser({ name, day, timeLabel }) {
 }
 
 // Remove user from all slots
-export function removeUser(name) {
+export function removeUser({ name, day, timeLabel }) {
   const schedule = getCurrentSchedule();
-  let removed = false;
-  for (const { slot } of getAllSlots(schedule)) {
-    const before = slot.confirmed.length + slot.waitlist.length;
-    slot.confirmed = slot.confirmed.filter(u => u.name !== name);
-    slot.waitlist = slot.waitlist.filter(u => u.name !== name);
-    if (slot.confirmed.length + slot.waitlist.length !== before) removed = true;
+  const slot = schedule[day][timeLabel];
+
+  // Remove from confirmed
+  const beforeConfirmed = slot.confirmed.length;
+  slot.confirmed = slot.confirmed.filter(u => u.name !== name);
+
+  // Remove from waitlist
+  const beforeWaitlist = slot.waitlist.length;
+  slot.waitlist = slot.waitlist.filter(u => u.name !== name);
+
+  // Only save if a removal happened
+  if (slot.confirmed.length < beforeConfirmed || slot.waitlist.length < beforeWaitlist) {
+    saveSchedule(schedule);
+    return { status: "removed", message: "You have been removed from the selected slot." };
+  } else {
+    return { status: "not found", message: "You were not registered in this slot." };
   }
-  saveSchedule(schedule);
-  return removed;
 }
 
 // Promote waitlisted users 2 hours before slot, even if over 2-hour limit
