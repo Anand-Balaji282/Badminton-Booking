@@ -1,3 +1,13 @@
+export const DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday"
+];
+
 export function getCurrentSchedule() {
   const s = localStorage.getItem("schedule");
   return s ? JSON.parse(s) : {};
