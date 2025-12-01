@@ -1,92 +1,77 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2685.1">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badminton Slot Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css"> 
 </head>
-<body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="en"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Badminton Slot Booking&lt;/title&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;link rel="stylesheet" href="style.css"&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body class="bg-gray-50 min-h-screen p-4 sm:p-8"&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="loading" class="text-center p-8 text-xl font-semibold text-blue-600"&gt;Loading application...&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="auth-container" class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg hidden"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2 class="text-2xl font-bold mb-4 text-center text-gray-800"&gt;Sign In to Book&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;p class="text-sm text-center text-gray-600 mb-6"&gt;Your weekly hours will be tracked using your Google Account.&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button id="google-login-btn" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-200 flex items-center justify-center"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png" alt="Google" class="w-5 h-5 mr-3"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>Sign In with Google</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="app-container" class="max-w-4xl mx-auto hidden"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;header class="flex justify-between items-center bg-white p-4 rounded-lg shadow-md mb-6"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;h1 class="text-3xl font-extrabold text-blue-600"&gt;🏸 Daily Slot Scheduler&lt;/h1&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="flex items-center space-x-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;span id="user-info" class="text-gray-700 font-medium"&gt;&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;button id="logout-btn" class="text-sm text-red-500 hover:text-red-700 font-semibold"&gt;Logout&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/header&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="bg-blue-100 p-4 rounded-lg shadow"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p class="text-sm font-medium text-blue-700"&gt;Today's Date&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p id="current-date" class="text-xl font-bold text-blue-900"&gt;&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="bg-green-100 p-4 rounded-lg shadow"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p class="text-sm font-medium text-green-700"&gt;Weekly Hours Used&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p id="weekly-hours-used" class="text-xl font-bold text-green-900"&gt;0 / 2 hours&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="bg-yellow-100 p-4 rounded-lg shadow"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p class="text-sm font-medium text-yellow-700"&gt;Limit Status&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p id="limit-status" class="text-xl font-bold text-yellow-900"&gt;OK&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="bg-white p-4 rounded-lg shadow-md mb-6 flex flex-col sm:flex-row items-center justify-between"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;label for="date-select" class="font-semibold text-gray-700 mb-2 sm:mb-0"&gt;Select Date:&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="date" id="date-select" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="slots-container" class="space-y-6"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="message-area" class="mt-6 p-3 text-sm rounded-lg text-center hidden" role="alert"&gt;&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Placeholder for Firebase configuration</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const firebaseConfig = {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>apiKey: "YOUR_API_KEY",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>authDomain: "YOUR_AUTH_DOMAIN",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>projectId: "__app_id", // Uses the configured project ID</p>
-<p class="p1"><span class="Apple-converted-space">            </span>storageBucket: "YOUR_STORAGE_BUCKET",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>messagingSenderId: "YOUR_MESSAGING_SENDER_ID",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>appId: "__app_id"</p>
-<p class="p1"><span class="Apple-converted-space">        </span>};</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"&gt;&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"&gt;&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"&gt;&lt;/script&gt;</p>
-<p class="p2"><span class="Apple-converted-space">    </span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="script.js"&gt;&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+<body class="bg-gray-50 min-h-screen p-4 sm:p-8">
+
+    <div id="loading" class="text-center p-8 text-xl font-semibold text-blue-600">Loading application...</div>
+
+    <div id="auth-container" class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg hidden">
+        <h2 class="text-2xl font-bold mb-4 text-center text-gray-800">Sign In to Book</h2>
+        <p class="text-sm text-center text-gray-600 mb-6">Your weekly hours will be tracked using your Google Account.</p>
+        <button id="google-login-btn" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-200 flex items-center justify-center">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png" alt="Google" class="w-5 h-5 mr-3">
+            Sign In with Google
+        </button>
+    </div>
+
+    <div id="app-container" class="max-w-4xl mx-auto hidden">
+        <header class="flex justify-between items-center bg-white p-4 rounded-lg shadow-md mb-6">
+            <h1 class="text-3xl font-extrabold text-blue-600">🏸 Daily Slot Scheduler</h1>
+            <div class="flex items-center space-x-4">
+                <span id="user-info" class="text-gray-700 font-medium"></span>
+                <button id="logout-btn" class="text-sm text-red-500 hover:text-red-700 font-semibold">Logout</button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-blue-100 p-4 rounded-lg shadow">
+                <p class="text-sm font-medium text-blue-700">Today's Date</p>
+                <p id="current-date" class="text-xl font-bold text-blue-900"></p>
+            </div>
+            <div class="bg-green-100 p-4 rounded-lg shadow">
+                <p class="text-sm font-medium text-green-700">Weekly Hours Used</p>
+                <p id="weekly-hours-used" class="text-xl font-bold text-green-900">0 / 2 hours</p>
+            </div>
+            <div class="bg-yellow-100 p-4 rounded-lg shadow">
+                <p class="text-sm font-medium text-yellow-700">Limit Status</p>
+                <p id="limit-status" class="text-xl font-bold text-yellow-900">OK</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg shadow-md mb-6 flex flex-col sm:flex-row items-center justify-between">
+            <label for="date-select" class="font-semibold text-gray-700 mb-2 sm:mb-0">Select Date:</label>
+            <input type="date" id="date-select" class="p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <div id="slots-container" class="space-y-6">
+            </div>
+
+        <div id="message-area" class="mt-6 p-3 text-sm rounded-lg text-center hidden" role="alert"></div>
+
+    </div>
+
+    <script>
+        // Placeholder for Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCY7_kdxWxA6U6uTzA_wP4Vb7N7jTChtMc",
+            authDomain: "badminton-booking-e37b1.firebaseapp.com",
+            projectId: "badminton-booking-e37b1", // Uses the configured project ID 
+            storageBucket: "badminton-booking-e37b1.firebasestorage.app",
+            messagingSenderId: "441251244282",
+            appId: "1:441251244282:web:30b5afad5cc6cd510d4143”,
+            measurementId: "G-56K9QDE4FR"
+        };
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <script src="script.js"></script>
 </body>
 </html>
