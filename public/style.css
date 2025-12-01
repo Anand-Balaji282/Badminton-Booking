@@ -1,0 +1,66 @@
+/* Custom CSS for a better look and feel */
+
+.slot-card {
+    transition: all 0.3s ease;
+}
+
+.slot-card.is-booked {
+    background-color: #f0f9ff; /* Blue background for booked slots */
+    border-left: 5px solid #3b82f6; /* Blue border */
+}
+
+.slot-card.is-full {
+    background-color: #fef2f2; /* Red background for full slots */
+    border-left: 5px solid #ef4444; /* Red border */
+}
+
+/* Custom styles for the Booking Button */
+.booking-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.booking-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-book {
+    background-color: #10b981; /* Emerald green */
+    color: white;
+}
+
+.btn-book:hover:not(:disabled) {
+    background-color: #059669;
+}
+
+.btn-cancel {
+    background-color: #f59e0b; /* Amber yellow */
+    color: white;
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background-color: #d97706;
+}
+
+.btn-waitlist {
+    background-color: #6366f1; /* Indigo */
+    color: white;
+}
+
+.btn-waitlist:hover:not(:disabled) {
+    background-color: #4f46e5;
+}
+
+/* Waitlist Promotion Banner */
+.waitlist-banner {
+    background-color: #eff6ff; /* Light blue */
+    border-left: 4px solid #3b82f6;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    font-size: 0.875rem;
+    color: #1e40af;
+}
