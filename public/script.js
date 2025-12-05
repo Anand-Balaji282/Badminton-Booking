@@ -1,7 +1,7 @@
 // Global Firebase variables
 let db;
 let MAX_HOURS_PER_WEEK = 2;
-let globalUserName = null; // Store name once entered
+let globalUserName = null; // Stores the user's name after they first enter it
 
 // --- UTILITY FUNCTIONS ---
 function getCurrentDateString() {
@@ -37,9 +37,8 @@ function showMessage(message, type) {
     }, 5000);
 }
 
-// Function to prompt the user for their name
+// Function to prompt the user for their name (used on action click)
 function promptForName() {
-    // If the name is already stored globally, use it
     if (globalUserName) return globalUserName;
     
     let name = prompt("Please enter your name for booking:");
@@ -67,6 +66,10 @@ function setupFirebase() {
 
     document.getElementById('loading').classList.add('hidden');
     
+    // Ensure the app container is visible since there is no login screen
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) appContainer.classList.remove('hidden'); 
+
     initializeApp();
 }
 
@@ -80,7 +83,7 @@ async function initializeApp() {
     const initialDate = dateInput.value;
     document.getElementById('current-date').textContent = initialDate;
     
-    // Initial display of limits (set to 0 / OK on load, as name is unknown)
+    // Set initial limit display (actual check happens on booking)
     document.getElementById('weekly-hours-used').textContent = `0 / ${MAX_HOURS_PER_WEEK} hours`;
     document.getElementById('limit-status').textContent = 'OK';
     
@@ -96,7 +99,6 @@ async function initializeApp() {
 async function loadAndDisplayLimits(userName) {
     if (!userName) return 0;
     
-    // Logic to calculate startOfWeek remains the same
     const now = new Date();
     const startOfWeek = new Date(now.setDate(now.getDate() - (now.getDay() || 7) + 1));
     const startOfWeekTimestamp = firebase.firestore.Timestamp.fromDate(startOfWeek);
@@ -109,7 +111,6 @@ async function loadAndDisplayLimits(userName) {
         if (doc.exists) {
             const userData = doc.data();
             
-            // Weekly reset logic
             if (!userData.lastReset || userData.lastReset.toDate() < startOfWeekTimestamp.toDate()) {
                 weeklyHoursUsed = 0;
                 await userRef.set({ 
@@ -120,12 +121,10 @@ async function loadAndDisplayLimits(userName) {
                 weeklyHoursUsed = userData.weeklyHours || 0;
             }
         } else {
-            // New user, create document
             await userRef.set({ weeklyHours: 0, lastReset: firebase.firestore.Timestamp.fromDate(new Date()) });
             weeklyHoursUsed = 0;
         }
 
-        // --- UI Update ---
         const hoursText = `${weeklyHoursUsed} / ${MAX_HOURS_PER_WEEK} hours`;
         document.getElementById('weekly-hours-used').textContent = hoursText;
         
@@ -144,11 +143,7 @@ async function loadAndDisplayLimits(userName) {
 
 
 // ----------------------------------------------------------------------
-// 4. SLOT DISPLAY AND RENDERING (Crucial for page update)
-// ----------------------------------------------------------------------
-
-// ----------------------------------------------------------------------
-// 4. SLOT DISPLAY AND RENDERING (Corrected)
+// 4. SLOT DISPLAY AND RENDERING (Corrected to prevent initial crash)
 // ----------------------------------------------------------------------
 
 async function updateSlotDisplay(dateString) {
@@ -161,12 +156,10 @@ async function updateSlotDisplay(dateString) {
         return;
     }
 
-    // Get the current time for locking past slots
     const now = new Date();
     const todayString = getCurrentDateString();
     
-    // Get the current user name from global state
-    const userName = globalUserName || ''; 
+    const userName = globalUserName || ''; // Use globalName if set
     
     try {
         const slotsRef = db.collection('slots');
@@ -189,15 +182,14 @@ async function updateSlotDisplay(dateString) {
                 
                 const isFull = players.length >= 4;
                 
-                // --- FIX for Time Check ---
-                // Only lock if the selected date is TODAY AND the time is in the past
+                // --- FIX: Robust Time Check ---
                 let isLocked = false;
                 if (dateString === todayString) {
-                    // Convert slot time (e.g., "1700") to number (17)
-                    const slotHour = parseInt(slot.time.substring(0, 2)); 
-                    isLocked = slotHour <= now.getHours(); 
+                    const slotHour = parseInt(slot.time.substring(0, 2), 10);
+                    // Lock if the slot hour is less than or equal to the current hour
+                    isLocked = slotHour < now.getHours(); 
                 }
-                // --------------------------
+                // -----------------------------
 
                 // Check if the current session user is involved
                 const isPlayer = userName && players.includes(userName);
@@ -207,7 +199,6 @@ async function updateSlotDisplay(dateString) {
                 let statusColor = 'bg-green-100 text-green-700';
                 let actionText = 'Available';
 
-                // ... (Rest of the rendering logic remains the same) ...
                 if (isLocked) {
                     actionText = 'Time Passed';
                     statusColor = 'bg-gray-200 text-gray-600';
@@ -227,7 +218,6 @@ async function updateSlotDisplay(dateString) {
                 } else {
                     buttonHTML = `<button data-action="book" data-id="${slotID}" class="action-btn w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">Book Now</button>`;
                 }
-                // ... (HTML construction remains the same) ...
                 
                 html += `
                     <div class="bg-white p-4 rounded-lg shadow-md flex justify-between items-center ${statusColor}">
@@ -254,14 +244,14 @@ async function updateSlotDisplay(dateString) {
 
     } catch (e) {
         console.error("FATAL ERROR FETCHING SLOTS:", e);
-        // Display the error exactly as you see it now to avoid hiding a failure
+        // This log helps debug if the error is still persisting
         container.innerHTML = '<p class="text-center p-8 text-red-500">FATAL ERROR loading data. Check console.</p>';
     }
 }
 
 
 // ----------------------------------------------------------------------
-// 5. BOOKING LOGIC (Now prompts for name)
+// 5. BOOKING LOGIC
 // ----------------------------------------------------------------------
 
 function attachActionListeners() {
@@ -273,7 +263,6 @@ function attachActionListeners() {
             const userName = promptForName();
             if (!userName) return;
 
-            // Only call the relevant handler based on action
             if (action === 'book') handleBooking(slotID, userName);
             // ... Add calls for cancel and waitlist handlers here
         });
@@ -283,7 +272,7 @@ function attachActionListeners() {
 // Main booking handler
 async function handleBooking(slotID, userName) {
     
-    // 1. Check Usage Limit (Name-based check)
+    // 1. Check Usage Limit 
     const weeklyHoursUsed = await loadAndDisplayLimits(userName);
     if (weeklyHoursUsed >= MAX_HOURS_PER_WEEK) {
         showMessage('Booking denied: Weekly limit reached for ' + userName, 'error');
