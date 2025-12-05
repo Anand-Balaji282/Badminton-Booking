@@ -99,25 +99,32 @@ function setupFirebase() {
 // 2. DATA INITIALIZATION AND LIMITS
 // ----------------------------------------------------------------------
 
+// New corrected function to ensure the date is always read from the input
 async function initializeApp() {
     // 1. Set up date picker defaults
     const dateInput = document.getElementById('date-select');
     const today = getCurrentDateString();
-    dateInput.value = today;
-    dateInput.min = today; // Prevent booking in the past
     
-    document.getElementById('current-date').textContent = today;
+    // Set the default value and minimum date
+    dateInput.value = today; 
+    dateInput.min = today; 
+
+    // 2. Initial display update
+    // Read the value directly from the input element for consistency
+    const initialDate = dateInput.value;
+    document.getElementById('current-date').textContent = initialDate;
     
-    // 2. Load user stats
+    // 3. Load user stats
     await loadUserStats(currentUserID);
 
-    // 3. Load slots for the current date
+    // 4. Load slots for the initial date
+    updateSlotDisplay(initialDate); // Use the validated date string
+
+    // 5. Set up date change listener
     dateInput.addEventListener('change', (e) => {
         document.getElementById('current-date').textContent = e.target.value;
         updateSlotDisplay(e.target.value);
     });
-
-    updateSlotDisplay(today);
 }
 
 async function loadUserStats(uid) {
