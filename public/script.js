@@ -1,10 +1,8 @@
 // Global Firebase variables
-let auth;
 let db;
-let currentUser = null;
-let currentUserID = null;
-let weeklyHoursUsed = 0;
 let MAX_HOURS_PER_WEEK = 2;
+
+// --- UTILITY FUNCTIONS (Remaining same) ---
 
 // Helper to get the current date in YYYY-MM-DD format
 function getCurrentDateString() {
@@ -17,6 +15,7 @@ function formatDateForFirestore(dateString) {
     if (!dateString) return null;
     const [year, month, day] = dateString.split('-');
     const date = new Date(year, month - 1, day);
+    // Note: If using the original short-month-day-year format, ensure consistent date logic.
     return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).replace(/,/g, '').replace(/ /g, '-');
 }
 
@@ -45,7 +44,7 @@ function showMessage(message, type) {
 }
 
 // ----------------------------------------------------------------------
-// 1. AUTHENTICATION HANDLERS
+// 1. AUTH REMOVAL & INIT
 // ----------------------------------------------------------------------
 
 function setupFirebase() {
@@ -54,95 +53,78 @@ function setupFirebase() {
         return;
     }
     
-    // Use the Compat APIs for the provided SDKs
     firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
     db = firebase.firestore();
 
     document.getElementById('loading').classList.add('hidden');
     
-    // Check authentication state on load
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            currentUser = user;
-            currentUserID = user.uid;
-            document.getElementById('auth-container').classList.add('hidden');
-            document.getElementById('app-container').classList.remove('hidden');
-            document.getElementById('user-info').textContent = `Logged in as: ${user.displayName}`;
-            
-            initializeApp();
-        } else {
-            currentUser = null;
-            currentUserID = null;
-            document.getElementById('auth-container').classList.remove('hidden');
-            document.getElementById('app-container').classList.add('hidden');
-        }
-    });
+    // Hide auth-related containers that are no longer needed
+    const authContainer = document.getElementById('auth-container');
+    if (authContainer) authContainer.classList.add('hidden');
+    
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) appContainer.classList.remove('hidden');
 
-    // Set up Google Sign-In button
-    document.getElementById('google-login-btn').addEventListener('click', () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(error => {
-            console.error("Sign-in error:", error);
-            showMessage(`Sign-in Failed: ${error.message}`, 'error');
-        });
-    });
+    // Remove logout button visibility (or remove the button from index.html)
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.classList.add('hidden');
+    
+    // Start the app directly
+    initializeApp();
+}
 
-    // Set up Logout button
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        auth.signOut();
-    });
+// Function to prompt the user for their name
+function promptForName() {
+    let name = prompt("Please enter your name for booking:");
+    if (name) {
+        // Clean up name for storage (trim and lowercase for case-insensitive tracking)
+        return name.trim().toLowerCase();
+    }
+    return null;
 }
 
 
 // ----------------------------------------------------------------------
-// 2. DATA INITIALIZATION AND LIMITS
+// 2. DATA INITIALIZATION AND LIMITS (Now uses name as ID)
 // ----------------------------------------------------------------------
 
-// New corrected function to ensure the date is always read from the input
 async function initializeApp() {
-    // 1. Set up date picker defaults
     const dateInput = document.getElementById('date-select');
     const today = getCurrentDateString();
     
-    // Set the default value and minimum date
     dateInput.value = today; 
     dateInput.min = today; 
 
-    // 2. Initial display update
-    // Read the value directly from the input element for consistency
     const initialDate = dateInput.value;
     document.getElementById('current-date').textContent = initialDate;
     
-    // 3. Load user stats
-    await loadUserStats(currentUserID);
+    // We cannot load user stats until the user attempts to book, 
+    // but we can set up the date listener
+    
+    updateSlotDisplay(initialDate); 
 
-    // 4. Load slots for the initial date
-    updateSlotDisplay(initialDate); // Use the validated date string
-
-    // 5. Set up date change listener
     dateInput.addEventListener('change', (e) => {
         document.getElementById('current-date').textContent = e.target.value;
         updateSlotDisplay(e.target.value);
     });
 }
 
-async function loadUserStats(uid) {
-    if (!uid) return;
-
-    // Check if the current week has passed (e.g., reset every Monday)
+// Functionality to load and display limits based on the entered name (if needed)
+async function loadAndDisplayLimits(userName) {
+    if (!userName) return 0;
+    
     const now = new Date();
     const startOfWeek = new Date(now.setDate(now.getDate() - (now.getDay() || 7) + 1)); // Monday
     const startOfWeekTimestamp = firebase.firestore.Timestamp.fromDate(startOfWeek);
+    let weeklyHoursUsed = 0;
 
     try {
-        const userRef = db.collection('users').doc(uid);
+        const userRef = db.collection('users').doc(userName); // Use name as document ID
         const doc = await userRef.get();
 
         if (doc.exists) {
             const userData = doc.data();
             
-            // Check if last reset was before the current week
             if (!userData.lastReset || userData.lastReset.toDate() < startOfWeekTimestamp.toDate()) {
                 weeklyHoursUsed = 0;
                 await userRef.set({ 
@@ -161,31 +143,28 @@ async function loadUserStats(uid) {
             weeklyHoursUsed = 0;
         }
 
-        updateLimitDisplay();
+        const hoursText = `${weeklyHoursUsed} / ${MAX_HOURS_PER_WEEK} hours`;
+        document.getElementById('weekly-hours-used').textContent = hoursText;
+        
+        const limitStatus = document.getElementById('limit-status');
+        if (weeklyHoursUsed >= MAX_HOURS_PER_WEEK) {
+            limitStatus.textContent = 'LIMIT REACHED';
+        } else {
+            limitStatus.textContent = 'OK';
+        }
+        
+        return weeklyHoursUsed;
 
     } catch (e) {
         console.error("Error loading user stats:", e);
-        showMessage("Error loading your usage limits.", 'error');
-    }
-}
-
-function updateLimitDisplay() {
-    const hoursText = `${weeklyHoursUsed} / ${MAX_HOURS_PER_WEEK} hours`;
-    document.getElementById('weekly-hours-used').textContent = hoursText;
-
-    const limitStatus = document.getElementById('limit-status');
-    if (weeklyHoursUsed >= MAX_HOURS_PER_WEEK) {
-        limitStatus.textContent = 'LIMIT REACHED';
-        limitStatus.className = 'text-xl font-bold text-red-700';
-    } else {
-        limitStatus.textContent = 'OK';
-        limitStatus.className = 'text-xl font-bold text-green-700';
+        showMessage("Error loading usage limits.", 'error');
+        return 0;
     }
 }
 
 
 // ----------------------------------------------------------------------
-// 3. SLOT DISPLAY AND RENDERING
+// 3. SLOT DISPLAY AND RENDERING (Minimal changes, but crucial for reflection)
 // ----------------------------------------------------------------------
 
 async function updateSlotDisplay(dateString) {
@@ -197,10 +176,11 @@ async function updateSlotDisplay(dateString) {
         container.innerHTML = '<p class="text-center p-8 text-gray-500">Select a valid date.</p>';
         return;
     }
+    
+    // We get the username upon action, not on page load, 
+    // so we can't fully personalize the view until the user performs an action.
 
     try {
-        // Query to get slots for the selected date
-        // Note: This query requires a composite index on (date, time) in ascending order.
         const slotsRef = db.collection('slots');
         const q = slotsRef
             .where('date', '==', dateFirestore)
@@ -210,19 +190,19 @@ async function updateSlotDisplay(dateString) {
         let html = '';
         
         if (snapshot.empty) {
-            // No slots defined for this day, offer a default structure (for admin setup)
-            html = '<p class="text-center p-8 text-gray-500">No slots defined for this date. (Admin required to set up slots)</p>';
+            html = '<p class="text-center p-8 text-gray-500">No slots defined for this date.</p>';
         } else {
             snapshot.forEach(doc => {
                 const slot = doc.data();
                 const slotID = doc.id;
                 const slotKey = `${slot.time}`;
                 
-                const isBooked = slot.status === 'Booked';
-                const isFull = slot.count >= 4;
-                const isInWaitlist = slot.waitlist && slot.waitlist.includes(currentUserID);
-                const isPlayer = slot.players && slot.players.includes(currentUserID);
-                const isLocked = slot.time <= new Date().getHours(); // simple lock for past hours
+                // Now showing names instead of just checking UID
+                const players = slot.players || [];
+                const waitlist = slot.waitlist || [];
+                
+                const isFull = players.length >= 4;
+                const isLocked = slot.time <= new Date().getHours(); 
                 
                 let buttonHTML = '';
                 let statusColor = 'bg-green-100 text-green-700';
@@ -232,18 +212,10 @@ async function updateSlotDisplay(dateString) {
                     actionText = 'Time Passed';
                     statusColor = 'bg-gray-200 text-gray-600';
                     buttonHTML = `<button disabled class="w-full py-2 bg-gray-400 text-white rounded-md cursor-not-allowed">Closed</button>`;
-                } else if (isPlayer) {
-                    actionText = 'You Are BOOKED';
-                    statusColor = 'bg-blue-100 text-blue-700';
-                    buttonHTML = `<button data-action="cancel" data-id="${slotID}" class="action-btn w-full py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition">Cancel Slot</button>`;
                 } else if (isFull) {
                     actionText = 'SLOT FULL';
                     statusColor = 'bg-yellow-100 text-yellow-700';
-                    if (isInWaitlist) {
-                         buttonHTML = `<button data-action="waitlist-cancel" data-id="${slotID}" class="action-btn w-full py-2 bg-orange-400 text-white rounded-md hover:bg-orange-500 transition">Leave Waitlist</button>`;
-                    } else {
-                         buttonHTML = `<button data-action="waitlist" data-id="${slotID}" class="action-btn w-full py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition">Join Waitlist</button>`;
-                    }
+                    buttonHTML = `<button data-action="waitlist" data-id="${slotID}" class="action-btn w-full py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition">Join Waitlist</button>`;
                 } else {
                     actionText = 'Available';
                     statusColor = 'bg-green-100 text-green-700';
@@ -255,11 +227,12 @@ async function updateSlotDisplay(dateString) {
                         <div class="flex-grow">
                             <h3 class="text-xl font-bold">${formatTime(slotKey)}</h3>
                             <p class="text-sm">${actionText}</p>
+                            <p class="text-xs mt-1">Booked: ${players.join(', ') || 'None'}</p>
                         </div>
                         <div class="text-right mr-4">
-                            <p class="text-lg font-semibold">Players: ${slot.players ? slot.players.length : 0} / 4</p>
-                            ${slot.waitlist && slot.waitlist.length > 0 ? 
-                                `<p class="text-xs text-yellow-800">Waitlist: ${slot.waitlist.length}</p>` : ''}
+                            <p class="text-lg font-semibold">Spots: ${players.length} / 4</p>
+                            ${waitlist.length > 0 ? 
+                                `<p class="text-xs text-yellow-800">Waitlist: ${waitlist.length} (${waitlist.join(', ')})</p>` : ''}
                         </div>
                         <div class="w-1/4">
                             ${buttonHTML}
@@ -274,14 +247,14 @@ async function updateSlotDisplay(dateString) {
 
     } catch (e) {
         console.error("Error fetching slots:", e);
-        showMessage("Error fetching slots. Check your Firestore Index status.", 'error');
+        showMessage("Error fetching slots. Final check: Is the Composite Index enabled?", 'error');
         container.innerHTML = '<p class="text-center p-8 text-red-500">Error loading data. Check console.</p>';
     }
 }
 
 
 // ----------------------------------------------------------------------
-// 4. BOOKING AND CANCELLATION LOGIC
+// 4. BOOKING AND CANCELLATION LOGIC (Now uses Name)
 // ----------------------------------------------------------------------
 
 function attachActionListeners() {
@@ -290,24 +263,28 @@ function attachActionListeners() {
             const action = e.target.dataset.action;
             const slotID = e.target.dataset.id;
             
-            if (action === 'book') handleBooking(slotID);
-            else if (action === 'cancel') handleCancel(slotID);
-            else if (action === 'waitlist') handleWaitlist(slotID);
-            else if (action === 'waitlist-cancel') handleWaitlistCancel(slotID);
+            const userName = promptForName();
+            if (!userName) return;
+
+            if (action === 'book') handleBooking(slotID, userName);
+            // Cancel/Waitlist handlers would be added here
         });
     });
 }
 
 // Main booking handler (handles all slot updates)
-async function handleBooking(slotID) {
+async function handleBooking(slotID, userName) {
+    const selectedDate = document.getElementById('date-select').value;
+    
+    // 1. Check Usage Limit (Name-based check)
+    const weeklyHoursUsed = await loadAndDisplayLimits(userName);
     if (weeklyHoursUsed >= MAX_HOURS_PER_WEEK) {
-        showMessage('Booking denied: Weekly limit reached.', 'error');
+        showMessage('Booking denied: Weekly limit reached for ' + userName, 'error');
         return;
     }
 
     const slotRef = db.collection('slots').doc(slotID);
-    const userRef = db.collection('users').doc(currentUserID);
-    const selectedDate = document.getElementById('date-select').value;
+    const userRef = db.collection('users').doc(userName);
     
     try {
         await db.runTransaction(async (transaction) => {
@@ -317,27 +294,17 @@ async function handleBooking(slotID) {
             if (!slotDoc.exists) throw "Slot does not exist!";
             const slotData = slotDoc.data();
             
-            // Check 1: User is already involved
-            if (slotData.players && slotData.players.includes(currentUserID)) {
+            // Check 1: User is already involved (using name)
+            if (slotData.players && slotData.players.includes(userName)) {
                 throw new Error("You are already booked for this slot.");
             }
-            if (slotData.waitlist && slotData.waitlist.includes(currentUserID)) {
-                throw new Error("You are already on the waitlist for this slot.");
-            }
-
-            // Check 2: Max players reached
             if (slotData.players.length >= 4) {
-                // Should be handled by UI, but double-check here
+                // If full, force user to go to waitlist button instead
                 throw new Error("Slot is full. Please join the waitlist.");
             }
-
-            // Check 3: Usage Limit (redundant with initial check but safe)
-            if ((userDoc.data().weeklyHours || 0) >= MAX_HOURS_PER_WEEK) {
-                throw new Error("Booking denied: Weekly limit reached.");
-            }
-
+            
             // 1. Update Slot
-            const newPlayers = [...(slotData.players || []), currentUserID];
+            const newPlayers = [...(slotData.players || []), userName];
             const newCount = newPlayers.length;
             
             transaction.update(slotRef, {
@@ -346,18 +313,17 @@ async function handleBooking(slotID) {
                 status: newCount === 4 ? 'Full' : 'Booked',
             });
             
-            // 2. Update User Hours
+            // 2. Update User Hours (using name doc)
             const newHours = (userDoc.data().weeklyHours || 0) + 1;
             transaction.update(userRef, { weeklyHours: newHours });
 
-            weeklyHoursUsed = newHours; // Update local state
         });
         
         // --- SUCCESS ---
-        showMessage('Slot successfully booked! Hours updated.', 'success');
+        showMessage('Slot successfully booked for ' + userName + '!', 'success');
         
         // 🚨 CRUCIAL: Call the refresh function after successful transaction
-        updateLimitDisplay();
+        await loadAndDisplayLimits(userName); // Update the hours display
         updateSlotDisplay(selectedDate);
         
     } catch (e) {
@@ -367,99 +333,6 @@ async function handleBooking(slotID) {
     }
 }
 
-
-// Waitlist handler (simpler transaction)
-async function handleWaitlist(slotID) {
-    const slotRef = db.collection('slots').doc(slotID);
-    const selectedDate = document.getElementById('date-select').value;
-    
-    try {
-        await db.runTransaction(async (transaction) => {
-            const slotDoc = await transaction.get(slotRef);
-            if (!slotDoc.exists) throw "Slot does not exist!";
-            const slotData = slotDoc.data();
-            
-            if (slotData.waitlist && slotData.waitlist.includes(currentUserID)) {
-                throw new Error("You are already on the waitlist.");
-            }
-            
-            const newWaitlist = [...(slotData.waitlist || []), currentUserID];
-            transaction.update(slotRef, { waitlist: newWaitlist });
-        });
-        
-        showMessage('Successfully joined the waitlist!', 'success');
-        updateSlotDisplay(selectedDate); // Refresh
-        
-    } catch (e) {
-        showMessage(`Error joining waitlist: ${e.message || 'Unknown error.'}`, 'error');
-    }
-}
-
-
-// Cancel handlers (booking and waitlist) would follow a similar structure with transaction updates.
-// They would reduce the user's weeklyHours and update the slot's players/waitlist arrays.
-// Example:
-async function handleCancel(slotID) {
-    const slotRef = db.collection('slots').doc(slotID);
-    const userRef = db.collection('users').doc(currentUserID);
-    const selectedDate = document.getElementById('date-select').value;
-    
-    try {
-        await db.runTransaction(async (transaction) => {
-            const slotDoc = await transaction.get(slotRef);
-            const userDoc = await transaction.get(userRef);
-            
-            if (!slotDoc.exists) throw "Slot does not exist!";
-            const slotData = slotDoc.data();
-
-            // 1. Update Slot (Remove player)
-            const newPlayers = (slotData.players || []).filter(uid => uid !== currentUserID);
-            const newCount = newPlayers.length;
-            
-            transaction.update(slotRef, {
-                players: newPlayers,
-                count: newCount,
-                status: newCount > 0 ? 'Booked' : 'Available',
-            });
-            
-            // 2. Update User Hours
-            const newHours = Math.max(0, (userDoc.data().weeklyHours || 0) - 1);
-            transaction.update(userRef, { weeklyHours: newHours });
-            
-            weeklyHoursUsed = newHours; // Update local state
-            
-            // 3. Simple Waitlist promotion (immediate promotion upon cancel)
-            if (slotData.waitlist && slotData.waitlist.length > 0 && newCount < 4) {
-                const promotedUID = slotData.waitlist[0];
-                const updatedWaitlist = slotData.waitlist.slice(1);
-                const updatedPlayers = [...newPlayers, promotedUID];
-                
-                transaction.update(slotRef, {
-                    players: updatedPlayers,
-                    waitlist: updatedWaitlist,
-                    count: updatedPlayers.length,
-                    status: updatedPlayers.length === 4 ? 'Full' : 'Booked',
-                });
-                
-                // NOTE: This simple promotion doesn't check the promoted user's weekly limit.
-                // For production, this should be done in a Cloud Function.
-                
-                // Increment promoted user's hours
-                const promotedUserRef = db.collection('users').doc(promotedUID);
-                const promotedUserDoc = await transaction.get(promotedUserRef);
-                const promotedNewHours = (promotedUserDoc.data().weeklyHours || 0) + 1;
-                transaction.update(promotedUserRef, { weeklyHours: promotedNewHours });
-            }
-        });
-        
-        showMessage('Slot successfully cancelled. Hours reduced.', 'success');
-        updateLimitDisplay();
-        updateSlotDisplay(selectedDate); // Refresh
-        
-    } catch (e) {
-        showMessage(`Error cancelling slot: ${e.message || 'Unknown error.'}`, 'error');
-    }
-}
 
 // ----------------------------------------------------------------------
 // 5. INITIALIZATION CALL
