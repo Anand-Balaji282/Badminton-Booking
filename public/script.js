@@ -147,6 +147,10 @@ async function loadAndDisplayLimits(userName) {
 // 4. SLOT DISPLAY AND RENDERING (Crucial for page update)
 // ----------------------------------------------------------------------
 
+// ----------------------------------------------------------------------
+// 4. SLOT DISPLAY AND RENDERING (Corrected)
+// ----------------------------------------------------------------------
+
 async function updateSlotDisplay(dateString) {
     const container = document.getElementById('slots-container');
     container.innerHTML = 'Fetching slots...';
@@ -157,13 +161,19 @@ async function updateSlotDisplay(dateString) {
         return;
     }
 
+    // Get the current time for locking past slots
+    const now = new Date();
+    const todayString = getCurrentDateString();
+    
+    // Get the current user name from global state
+    const userName = globalUserName || ''; 
+    
     try {
         const slotsRef = db.collection('slots');
         const q = slotsRef
             .where('date', '==', dateFirestore)
             .orderBy('time', 'asc');
         
-        // 🚨 This READ operation MUST SUCCEED (Requires enabled Composite Index and Public Rules)
         const snapshot = await q.get();
         let html = '';
         
@@ -178,10 +188,18 @@ async function updateSlotDisplay(dateString) {
                 const waitlist = slot.waitlist || [];
                 
                 const isFull = players.length >= 4;
-                const isLocked = slot.time <= new Date().getHours(); 
                 
-                // Check if the CURRENT session user is in the slot (only if name has been entered)
-                const userName = globalUserName || '';
+                // --- FIX for Time Check ---
+                // Only lock if the selected date is TODAY AND the time is in the past
+                let isLocked = false;
+                if (dateString === todayString) {
+                    // Convert slot time (e.g., "1700") to number (17)
+                    const slotHour = parseInt(slot.time.substring(0, 2)); 
+                    isLocked = slotHour <= now.getHours(); 
+                }
+                // --------------------------
+
+                // Check if the current session user is involved
                 const isPlayer = userName && players.includes(userName);
                 const isInWaitlist = userName && waitlist.includes(userName);
                 
@@ -189,6 +207,7 @@ async function updateSlotDisplay(dateString) {
                 let statusColor = 'bg-green-100 text-green-700';
                 let actionText = 'Available';
 
+                // ... (Rest of the rendering logic remains the same) ...
                 if (isLocked) {
                     actionText = 'Time Passed';
                     statusColor = 'bg-gray-200 text-gray-600';
@@ -208,7 +227,8 @@ async function updateSlotDisplay(dateString) {
                 } else {
                     buttonHTML = `<button data-action="book" data-id="${slotID}" class="action-btn w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">Book Now</button>`;
                 }
-
+                // ... (HTML construction remains the same) ...
+                
                 html += `
                     <div class="bg-white p-4 rounded-lg shadow-md flex justify-between items-center ${statusColor}">
                         <div class="flex-grow">
@@ -234,7 +254,7 @@ async function updateSlotDisplay(dateString) {
 
     } catch (e) {
         console.error("FATAL ERROR FETCHING SLOTS:", e);
-        showMessage("Fatal error loading data. Console check required.", 'error');
+        // Display the error exactly as you see it now to avoid hiding a failure
         container.innerHTML = '<p class="text-center p-8 text-red-500">FATAL ERROR loading data. Check console.</p>';
     }
 }
